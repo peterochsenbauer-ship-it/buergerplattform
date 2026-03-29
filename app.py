@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
+import pandas as pd
 
 st.set_page_config(page_title="Haushalts-Simulation VS", layout="wide")
 
@@ -14,22 +15,40 @@ auf den Handlungsspielraum der Stadtverwaltung auswirken könnten.
 EINWOHNER = 90000
 M_FIX = 100
 
+# Haushaltsentwicklung (Beispieldaten)
+haushalt = pd.DataFrame({
+    "Jahr":[2020,2021,2022,2023,2024],
+    "Haushalt":[105,110,98,102,95]
+})
+
 # Sidebar
 st.sidebar.header("Simulation einstellen")
+
+# Szenario Auswahl
+st.sidebar.subheader("Haushaltsstrategie")
+
+szenario = st.sidebar.radio(
+    "Szenario wählen",
+    [
+        "Status quo",
+        "Sparhaushalt",
+        "Investitionshaushalt"
+    ]
+)
 
 personal = st.sidebar.slider("Personalstellen Veränderung", -20, 40, 0)
 
 investitionen = st.sidebar.slider(
-"Investitionen Infrastruktur",
--50,50,0)
+    "Investitionen Infrastruktur",
+    -50,50,0)
 
 kultur = st.sidebar.slider(
-"Kultur & Veranstaltungen",
--20,20,0)
+    "Kultur & Veranstaltungen",
+    -20,20,0)
 
 vereine = st.sidebar.slider(
-"Vereinsförderung",
--20,20,0)
+    "Vereinsförderung",
+    -20,20,0)
 
 st.sidebar.subheader("Neue Einnahmen prüfen")
 
@@ -42,9 +61,25 @@ verpackungssteuer = st.sidebar.checkbox("Verpackungssteuer")
 st.sidebar.subheader("Sondersituation")
 
 krise = st.sidebar.toggle(
-"Krisenmodus aktivieren",
-help="Simuliert außergewöhnliche Belastungen für den Haushalt"
+    "Krisenmodus aktivieren",
+    help="Simuliert außergewöhnliche Belastungen für den Haushalt"
 )
+
+# Szenario Logik
+
+if szenario == "Sparhaushalt":
+
+    personal = -5
+    investitionen = -20
+    kultur = -5
+    vereine = -5
+
+elif szenario == "Investitionshaushalt":
+
+    personal = 10
+    investitionen = 30
+    kultur = 10
+    vereine = 5
 
 # Einnahmen berechnen
 steuer_einnahmen = 0
@@ -155,25 +190,44 @@ def haushalts_ampel(motor):
 # Projektstatus
 def projekt_status(motor):
 
-    st.subheader("Mögliche Auswirkungen")
+    st.subheader("Städtische Projekte")
 
     if motor >= 120:
 
-        st.write("✔ Infrastrukturprojekte möglich")
-        st.write("✔ Kulturveranstaltungen gesichert")
-        st.write("✔ Förderung für Vereine stabil")
+        st.write("✔ Neubau Hallenbad möglich")
+        st.write("✔ Schulsanierungen möglich")
+        st.write("✔ Ausbau Radwegenetz")
 
     elif motor >= 90:
 
-        st.write("⚠ Einige Projekte könnten verschoben werden")
-        st.write("⚠ Veranstaltungsbudget könnte reduziert werden")
+        st.write("⚠ Hallenbad könnte verschoben werden")
+        st.write("✔ Schulsanierung wahrscheinlich")
+        st.write("⚠ Radwege werden reduziert")
 
     else:
 
-        st.write("❗ Einsparungen wahrscheinlich bei:")
-        st.write("- Veranstaltungen")
-        st.write("- Vereinsförderung")
-        st.write("- Stadtentwicklungsprojekten")
+        st.write("❗ Projekte unter Druck")
+
+        st.write("❌ Hallenbad gestoppt")
+        st.write("⚠ Schulsanierung reduziert")
+        st.write("⚠ Radwege verschoben")
+
+
+# Haushaltsentwicklung Diagramm
+st.subheader("Haushaltsentwicklung")
+
+fig_hist = go.Figure()
+
+fig_hist.add_trace(
+    go.Scatter(
+        x=haushalt["Jahr"],
+        y=haushalt["Haushalt"],
+        mode="lines+markers",
+        name="Haushaltslage"
+    )
+)
+
+st.plotly_chart(fig_hist, use_container_width=True)
 
 
 # Layout
@@ -220,6 +274,20 @@ st.subheader("Verteilung der finanziellen Last")
 st.write(f"V zahlt {v_pct:.0f}% | S zahlt {s_pct:.0f}%")
 
 fairness_balken(v_pct,s_pct)
+
+
+# Investitionsverteilung
+st.subheader("Investitionsverteilung")
+
+labels = ["Schulen","Straßen","Kultur","Sport","Soziales"]
+
+values = [30,25,15,15,15]
+
+fig_pie = go.Figure(
+    data=[go.Pie(labels=labels, values=values)]
+)
+
+st.plotly_chart(fig_pie, use_container_width=True)
 
 
 # Kosten pro Bürger
