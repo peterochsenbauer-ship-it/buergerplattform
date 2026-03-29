@@ -7,15 +7,15 @@ st.set_page_config(page_title="Haushalts-Simulation VS", layout="wide")
 st.title("Haushalts-Simulation – Villingen-Schwenningen")
 
 st.markdown("""
-Diese Simulation zeigt vereinfacht, wie sich finanzielle Entscheidungen
-auf den Handlungsspielraum der Stadtverwaltung auswirken könnten.
+Diese Simulation zeigt vereinfacht, wie politische Entscheidungen
+den finanziellen Handlungsspielraum der Stadt beeinflussen können.
 """)
 
 # Grundwerte
 EINWOHNER = 90000
-M_FIX = 100
+MOTOR_BASIS = 100
 
-# Haushaltsentwicklung (Beispieldaten)
+# Haushaltsentwicklung
 haushalt = pd.DataFrame({
     "Jahr":[2020,2021,2022,2023,2024],
     "Haushalt":[105,110,98,102,95]
@@ -24,62 +24,67 @@ haushalt = pd.DataFrame({
 # Sidebar
 st.sidebar.header("Simulation einstellen")
 
-# Szenario Auswahl
-st.sidebar.subheader("Haushaltsstrategie")
-
-szenario = st.sidebar.radio(
+# Szenario
+szenario = st.sidebar.selectbox(
     "Szenario wählen",
-    [
-        "Status quo",
-        "Sparhaushalt",
-        "Investitionshaushalt"
-    ]
+    ["Status quo","Sparhaushalt","Investitionshaushalt"]
 )
 
-personal = st.sidebar.slider("Personalstellen Veränderung", -20, 40, 0)
+# Standardwerte
+personal_default = 0
+invest_default = 0
+kultur_default = 0
+vereine_default = 0
+
+if szenario == "Sparhaushalt":
+    personal_default = -5
+    invest_default = -20
+    kultur_default = -5
+    vereine_default = -5
+
+if szenario == "Investitionshaushalt":
+    personal_default = 10
+    invest_default = 30
+    kultur_default = 10
+    vereine_default = 5
+
+
+# Slider
+st.sidebar.subheader("Politische Entscheidungen")
+
+personal = st.sidebar.slider(
+    "Personalstellen Veränderung",
+    -20,40,personal_default
+)
 
 investitionen = st.sidebar.slider(
     "Investitionen Infrastruktur",
-    -50,50,0)
+    -50,80,invest_default
+)
 
 kultur = st.sidebar.slider(
     "Kultur & Veranstaltungen",
-    -20,20,0)
+    -20,20,kultur_default
+)
 
 vereine = st.sidebar.slider(
     "Vereinsförderung",
-    -20,20,0)
+    -20,20,vereine_default
+)
 
-st.sidebar.subheader("Neue Einnahmen prüfen")
+# Einnahmen
+st.sidebar.subheader("Neue Einnahmen")
 
 grundsteuer_c = st.sidebar.checkbox("Grundsteuer C")
-
 zweitwohnsitzsteuer = st.sidebar.checkbox("Zweitwohnsitzsteuer")
-
 verpackungssteuer = st.sidebar.checkbox("Verpackungssteuer")
 
+# Krisenmodus
 st.sidebar.subheader("Sondersituation")
 
 krise = st.sidebar.toggle(
-    "Krisenmodus aktivieren",
-    help="Simuliert außergewöhnliche Belastungen für den Haushalt"
+    "Krisenmodus aktivieren"
 )
-
-# Szenario Logik
-
-if szenario == "Sparhaushalt":
-
-    personal = -5
-    investitionen = -20
-    kultur = -5
-    vereine = -5
-
-elif szenario == "Investitionshaushalt":
-
-    personal = 10
-    investitionen = 30
-    kultur = 10
-    vereine = 5
 
 # Einnahmen berechnen
 steuer_einnahmen = 0
@@ -94,25 +99,23 @@ if verpackungssteuer:
     steuer_einnahmen += 15
 
 # Krisenkosten
-krisenkosten = 0
+krisenkosten = 40 if krise else 0
 
-if krise:
-    krisenkosten = 40
-
-# Gesamtkosten
+# Kosten
 kosten = personal*2 + investitionen + kultur + vereine + krisenkosten
 
 # Haushaltspool
 pool = steuer_einnahmen - kosten
 
 # Motor
-motor = M_FIX + pool
+motor = MOTOR_BASIS + pool
 
-# Motorstottern im Krisenmodus
 motor_anzeige = motor
-
 if krise:
-    motor_anzeige = motor - 10
+    motor_anzeige -= 10
+
+# Kosten pro Einwohner
+kosten_pro_buerger = pool*1000000 / EINWOHNER if pool != 0 else 0
 
 # Lastenverteilung
 v_rev_net = max(0, steuer_einnahmen*0.6)
@@ -125,11 +128,34 @@ if pool < 0:
 v_pct = (v_rev_net/(v_rev_net+s_rev_net))*100 if (v_rev_net+s_rev_net)>0 else 0
 s_pct = (s_rev_net/(v_rev_net+s_rev_net))*100 if (v_rev_net+s_rev_net)>0 else 0
 
-# Kosten pro Bürger
-kosten_pro_buerger = pool*1000000 / EINWOHNER if pool != 0 else 0
+
+# Investitionsverteilung (DYNAMISCH)
+
+st.sidebar.subheader("Investitionsprioritäten")
+
+schulen = st.sidebar.slider("Schulen",0,50,30)
+strassen = st.sidebar.slider("Straßen",0,50,25)
+kultur_i = st.sidebar.slider("Kulturprojekte",0,50,15)
+sport = st.sidebar.slider("Sportanlagen",0,50,15)
+soziales = st.sidebar.slider("Soziales",0,50,15)
+
+total = schulen + strassen + kultur_i + sport + soziales
+
+if total == 0:
+    total = 1
+
+labels = ["Schulen","Straßen","Kultur","Sport","Soziales"]
+
+values = [
+    schulen/total*investitionen,
+    strassen/total*investitionen,
+    kultur_i/total*investitionen,
+    sport/total*investitionen,
+    soziales/total*investitionen
+]
 
 
-# Gauge Funktion
+# Gauge
 def make_gauge(value,title):
 
     fig = go.Figure(go.Indicator(
@@ -149,31 +175,6 @@ def make_gauge(value,title):
     return fig
 
 
-# Fairnessbalken
-def fairness_balken(v_pct,s_pct):
-
-    fig = go.Figure()
-
-    fig.add_bar(
-        x=["Lastenverteilung"],
-        y=[v_pct],
-        name="V"
-    )
-
-    fig.add_bar(
-        x=["Lastenverteilung"],
-        y=[s_pct],
-        name="S"
-    )
-
-    fig.update_layout(
-        barmode="stack",
-        height=300
-    )
-
-    st.plotly_chart(fig,use_container_width=True)
-
-
 # Haushaltsampel
 def haushalts_ampel(motor):
 
@@ -181,39 +182,13 @@ def haushalts_ampel(motor):
         st.success("🟢 Haushalt stabil – Investitionen möglich")
 
     elif motor >= 90:
-        st.warning("🟡 Haushalt angespannt – Entscheidungen müssen abgewogen werden")
+        st.warning("🟡 Haushalt angespannt")
 
     else:
-        st.error("🔴 Haushalt unter Druck – Einsparungen oder neue Einnahmen nötig")
+        st.error("🔴 Haushalt unter Druck")
 
 
-# Projektstatus
-def projekt_status(motor):
-
-    st.subheader("Städtische Projekte")
-
-    if motor >= 120:
-
-        st.write("✔ Neubau Hallenbad möglich")
-        st.write("✔ Schulsanierungen möglich")
-        st.write("✔ Ausbau Radwegenetz")
-
-    elif motor >= 90:
-
-        st.write("⚠ Hallenbad könnte verschoben werden")
-        st.write("✔ Schulsanierung wahrscheinlich")
-        st.write("⚠ Radwege werden reduziert")
-
-    else:
-
-        st.write("❗ Projekte unter Druck")
-
-        st.write("❌ Hallenbad gestoppt")
-        st.write("⚠ Schulsanierung reduziert")
-        st.write("⚠ Radwege verschoben")
-
-
-# Haushaltsentwicklung Diagramm
+# Haushaltsentwicklung
 st.subheader("Haushaltsentwicklung")
 
 fig_hist = go.Figure()
@@ -222,12 +197,11 @@ fig_hist.add_trace(
     go.Scatter(
         x=haushalt["Jahr"],
         y=haushalt["Haushalt"],
-        mode="lines+markers",
-        name="Haushaltslage"
+        mode="lines+markers"
     )
 )
 
-st.plotly_chart(fig_hist, use_container_width=True)
+st.plotly_chart(fig_hist,use_container_width=True)
 
 
 # Layout
@@ -238,7 +212,7 @@ with col1:
     st.metric(
         "Motor Stadtverwaltung",
         f"{motor_anzeige:.1f}",
-        delta=f"{motor_anzeige-M_FIX:.1f}"
+        delta=f"{motor_anzeige-MOTOR_BASIS:.1f}"
     )
 
     haushalts_ampel(motor)
@@ -256,38 +230,18 @@ with col2:
     )
 
 
-# Krisenwarnung
-if krise:
-
-    st.warning(
-    "⚠ Krisenmodus aktiv – außergewöhnliche Belastungen für den Haushalt."
-    )
-
-    st.info(
-    "Der Motor der Stadtverwaltung gerät unter Druck und verliert Leistungsfähigkeit."
-    )
-
-
-# Lastenverteilung
-st.subheader("Verteilung der finanziellen Last")
-
-st.write(f"V zahlt {v_pct:.0f}% | S zahlt {s_pct:.0f}%")
-
-fairness_balken(v_pct,s_pct)
-
-
-# Investitionsverteilung
+# Investitionsdiagramm
 st.subheader("Investitionsverteilung")
 
-labels = ["Schulen","Straßen","Kultur","Sport","Soziales"]
-
-values = [30,25,15,15,15]
-
 fig_pie = go.Figure(
-    data=[go.Pie(labels=labels, values=values)]
+    data=[go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.3
+    )]
 )
 
-st.plotly_chart(fig_pie, use_container_width=True)
+st.plotly_chart(fig_pie,use_container_width=True)
 
 
 # Kosten pro Bürger
@@ -299,29 +253,16 @@ f"{kosten_pro_buerger:.2f} €"
 )
 
 
-# Projektstatus
-projekt_status(motor)
-
-
 # Erklärung
 with st.expander("Erklärung für Bürger"):
 
     st.write("""
-Der „Motor“ steht symbolisch für die Handlungsfähigkeit der Stadtverwaltung.
+Der Motor symbolisiert die Handlungsfähigkeit der Stadtverwaltung.
 
-Wenn der Motor stark ist, hat die Stadt mehr finanziellen Spielraum.
-Wenn er schwächer wird, müssen Ausgaben reduziert oder Einnahmen erhöht werden.
+Politische Entscheidungen beeinflussen Einnahmen und Ausgaben.
 
-Die Regler erlauben es, verschiedene Szenarien auszuprobieren.
-
-Der Krisenschalter simuliert außergewöhnliche Belastungen
-(zum Beispiel wirtschaftliche Krisen oder unerwartete Ausgaben).
+Wenn der Motor stark ist, kann die Stadt mehr investieren.
+Wenn er schwach ist, müssen Ausgaben reduziert oder Einnahmen erhöht werden.
 """)
 
-
-# Disclaimer
-st.caption("""
-Diese Simulation ist ein vereinfachtes Modell und stellt keine offiziellen
-Haushaltszahlen der Stadt dar. Die Ergebnisse dienen nur zur
-Veranschaulichung möglicher Szenarien.
-""")
+st.caption("Simulation – vereinfachtes Modell")
