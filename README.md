@@ -1,25 +1,23 @@
-# buergerplattform
-Demoversion Buergerplattform-VS
-Diese Version simuliert jetzt:
+Anwendung ist eine interaktive Haushalts-Simulation für die Stadt Villingen-Schwenningen. Sie soll Bürgerinnen und Bürgern auf verständliche Weise zeigen, wie finanzielle Entscheidungen den Handlungsspielraum einer Stadt beeinflussen können. Die Anwendung bildet den kommunalen Haushalt nicht real ab, sondern stellt ein vereinfachtes Modell dar, das grundlegende Zusammenhänge sichtbar macht.
 
-🏛 Doppelhaushalt
+Im Mittelpunkt der Simulation steht der sogenannte „Motor der Stadtverwaltung“. Dieser Motor ist ein symbolischer Wert, der die finanzielle Leistungsfähigkeit der Stadt darstellt. Ausgangspunkt ist ein Basiswert von 100 Punkten. Wenn neue Einnahmen entstehen oder Ausgaben reduziert werden, steigt der Motorwert. Wenn Ausgaben steigen oder zusätzliche Belastungen auftreten, sinkt er. Ein hoher Motorwert bedeutet, dass die Stadt mehr Handlungsspielraum für Projekte und Investitionen hat. Ein niedriger Motorwert zeigt an, dass der Haushalt unter Druck steht und Entscheidungen schwieriger werden.
 
-Villingen + Schwenningen
+Die Nutzer können auf der linken Seite der Anwendung verschiedene Einstellungen verändern. Dort lassen sich politische oder administrative Entscheidungen simulieren. Dazu gehören Veränderungen bei Personalstellen, Investitionen in Infrastruktur, Ausgaben für Kultur und Veranstaltungen sowie die Förderung von Vereinen. Jede dieser Entscheidungen verändert die Kostenstruktur des Haushalts und wirkt sich direkt auf den Motor der Stadtverwaltung aus.
 
-📊 Investitionspolitik
+Zusätzlich können mögliche neue Einnahmequellen aktiviert werden. Dazu gehören beispielhaft eine Grundsteuer C, eine Zweitwohnsitzsteuer oder eine Verpackungssteuer. Wenn diese Optionen ausgewählt werden, erhöht sich das simulierte Steueraufkommen der Stadt. Dadurch kann sich der finanzielle Spielraum der Verwaltung verbessern.
 
-Verteilung zwischen Stadtteilen
+Ein weiterer Bestandteil der Simulation ist der Krisenmodus. Wird dieser aktiviert, entstehen zusätzliche Belastungen für den Haushalt. Gleichzeitig verliert der Motor der Verwaltung einen Teil seiner Leistungsfähigkeit. Dieser Mechanismus soll verdeutlichen, dass externe Ereignisse wie wirtschaftliche Krisen, unerwartete Kosten oder Einnahmeausfälle den kommunalen Handlungsspielraum deutlich einschränken können.
 
-🏗 Investitionsbereiche
-Schulen
-Verkehr
-Kultur
-Sport
-Soziales
-👥 Bevölkerungsgewichtung
+Die finanzielle Lage der Stadt wird zusätzlich über eine sogenannte Haushaltsampel dargestellt. Wenn der Motorwert hoch ist, erscheint eine grüne Anzeige. Das bedeutet, dass der Haushalt stabil ist und Investitionen möglich sind. Liegt der Motor im mittleren Bereich, zeigt die Ampel gelb an, dass der Haushalt angespannt ist und Entscheidungen sorgfältig abgewogen werden müssen. Sinkt der Motor unter einen kritischen Wert, erscheint eine rote Anzeige. In diesem Fall müsste die Stadt Ausgaben reduzieren oder neue Einnahmen erschließen.
 
-Investitionen wirken unterschiedlich je nach Größe des Stadtteils.
+Ein weiterer Bestandteil der Simulation ist die Darstellung der Investitionsstruktur. Ein Kreisdiagramm zeigt, wie sich die politischen Entscheidungen auf verschiedene Bereiche verteilen. Dazu gehören Personal, Infrastruktur, Kultur und Vereinsförderung. Dieses Diagramm macht sichtbar, welche Bereiche besonders stark von Veränderungen betroffen sind.
 
-📉 Haushaltsampel
+Die Anwendung zeigt außerdem eine symbolische Aufteilung der finanziellen Last zwischen Villingen und Schwenningen. Diese Darstellung ist rein illustrativ und soll zeigen, wie finanzielle Belastungen theoretisch verteilt werden könnten. Die Werte werden als Prozentanteile dargestellt und zusätzlich grafisch visualisiert.
 
-zeigt sofort die Finanzlage.
+Ein weiterer wichtiger Punkt ist die Darstellung der Auswirkungen auf einzelne Projekte. Je nach finanzieller Lage der Stadt werden unterschiedliche Szenarien angezeigt. Wenn der Haushalt stabil ist, können Infrastrukturprojekte umgesetzt und kulturelle Angebote gesichert werden. Bei einer angespannten Lage könnten Projekte verschoben werden. In einer kritischen Situation wären Einsparungen in verschiedenen Bereichen wahrscheinlich.
+
+Die Simulation zeigt außerdem, wie sich Entscheidungen auf einzelne Einwohner auswirken könnten. Dazu wird berechnet, wie hoch eine theoretische Mehrbelastung oder Entlastung pro Einwohner wäre. Dadurch wird der ansonsten abstrakte kommunale Haushalt greifbarer und verständlicher.
+
+Am Ende der Anwendung befindet sich eine ausführliche Bürgererklärung. Dort wird beschrieben, was der Motor der Stadtverwaltung bedeutet, welche Rolle die einzelnen Regler spielen und warum der Krisenmodus existiert. Außerdem wird klargestellt, dass es sich um ein vereinfachtes Modell handelt und nicht um offizielle Haushaltszahlen der Stadt.
+
+Insgesamt soll Version 3 der Anwendung dazu beitragen, kommunale Haushaltsentscheidungen transparenter und verständlicher zu machen. Bürgerinnen und Bürger können verschiedene Szenarien ausprobieren und sehen, wie sich politische Entscheidungen auf den finanziellen Handlungsspielraum der Stadt auswirken könnten.
