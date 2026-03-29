@@ -25,7 +25,7 @@ EINWOHNER_S = 47000
 M_FIX = 100
 
 
-# Haushaltsentwicklung
+# Haushaltsentwicklung (Beispieldaten)
 
 haushalt = pd.DataFrame({
     "Jahr":[2020,2021,2022,2023,2024],
@@ -60,7 +60,7 @@ vereine = st.sidebar.slider("Vereinsförderung",-20,20,0)
 
 # Investitionsverteilung
 
-st.sidebar.subheader("Investitionsverteilung")
+st.sidebar.subheader("Investitionsverteilung zwischen den Stadtteilen")
 
 anteil_v = st.sidebar.slider(
     "Investitionen Villingen %",
@@ -72,7 +72,7 @@ anteil_s = 100 - anteil_v
 st.sidebar.write(f"Schwenningen Anteil: {anteil_s}%")
 
 
-# Haushaltsbereiche
+# Investitionsstruktur
 
 st.sidebar.subheader("Investitionsstruktur")
 
@@ -96,9 +96,7 @@ verpackungssteuer = st.sidebar.checkbox("Verpackungssteuer")
 
 st.sidebar.subheader("Sondersituation")
 
-krise = st.sidebar.toggle(
-    "Krisenmodus aktivieren"
-)
+krise = st.sidebar.toggle("Krisenmodus aktivieren")
 
 
 # Szenario Logik
@@ -159,10 +157,10 @@ gewicht_v = EINWOHNER_V / EINWOHNER
 gewicht_s = EINWOHNER_S / EINWOHNER
 
 
-# Motorwerte
+# Motorwerte (Entwicklungsindex)
 
-motor_v = M_FIX + pool + invest_v*gewicht_v
-motor_s = M_FIX + pool + invest_s*gewicht_s
+motor_v = M_FIX + pool + invest_v * gewicht_v
+motor_s = M_FIX + pool + invest_s * gewicht_s
 
 
 # Kriseneffekt
@@ -175,10 +173,10 @@ if krise:
 
 # Kosten pro Bürger
 
-kosten_pro_buerger = pool*1000000 / EINWOHNER if pool != 0 else 0
+kosten_pro_buerger = pool * 1000000 / EINWOHNER if pool != 0 else 0
 
 
-# Gauge
+# Gauge Anzeige
 
 def gauge(value,title):
 
@@ -188,10 +186,11 @@ def gauge(value,title):
         title={'text':title},
         gauge={
             'axis':{'range':[0,150]},
+            'bar':{'color':"black"},
             'steps':[
                 {'range':[0,60],'color':"red"},
                 {'range':[60,100],'color':"orange"},
-                {'range':[100,150],'color':"green"}
+                {'range':[100,150],'color':"lightgreen"}
             ]
         }
     ))
@@ -216,9 +215,33 @@ def haushalts_ampel(pool):
         st.error("🔴 Haushalt unter Druck – Einsparungen oder neue Einnahmen nötig")
 
 
-# Haushaltsdiagramm
+# Projektstatus
 
-st.subheader("Haushaltsentwicklung")
+def projekt_status(pool):
+
+    st.subheader("Mögliche Projekte")
+
+    if pool > 20:
+
+        st.write("✔ Neubau Hallenbad möglich")
+        st.write("✔ Ausbau Radwegenetz")
+        st.write("✔ Schulsanierungen")
+
+    elif pool > -20:
+
+        st.write("⚠ Projekte müssen priorisiert werden")
+        st.write("✔ Schulsanierung wahrscheinlich")
+        st.write("⚠ Radwege teilweise")
+
+    else:
+
+        st.write("❌ Große Projekte derzeit nicht finanzierbar")
+        st.write("⚠ Nur notwendige Investitionen")
+
+
+# Haushaltsentwicklung Grafik
+
+st.subheader("Haushaltsentwicklung der Stadt")
 
 fig_hist = go.Figure()
 
@@ -226,7 +249,18 @@ fig_hist.add_trace(
     go.Scatter(
         x=haushalt["Jahr"],
         y=haushalt["Haushalt"],
-        mode="lines+markers"
+        mode="lines+markers",
+        name="Historische Entwicklung"
+    )
+)
+
+fig_hist.add_trace(
+    go.Scatter(
+        x=[2025],
+        y=[(motor_v+motor_s)/2],
+        mode="markers",
+        marker=dict(size=12),
+        name="Simulation"
     )
 )
 
@@ -235,7 +269,7 @@ st.plotly_chart(fig_hist,use_container_width=True)
 
 # Stadtteilentwicklung
 
-st.subheader("Entwicklung der Stadtteile")
+st.subheader("Finanzielle Entwicklung der Stadtteile")
 
 col1,col2 = st.columns(2)
 
@@ -254,17 +288,19 @@ with col2:
     )
 
 
+# Haushaltsampel anzeigen
+
 haushalts_ampel(pool)
 
 
-# Investitionsverteilung Stadtteile
+# Investitionsverteilung
 
 st.subheader("Investitionsverteilung zwischen den Stadtteilen")
 
-labels = ["Villingen","Schwenningen"]
-values = [anteil_v,anteil_s]
+labels=["Villingen","Schwenningen"]
+values=[anteil_v,anteil_s]
 
-fig_pie = go.Figure(
+fig_pie=go.Figure(
     data=[go.Pie(labels=labels,values=values)]
 )
 
@@ -275,7 +311,7 @@ st.plotly_chart(fig_pie,use_container_width=True)
 
 st.subheader("Investitionsstruktur")
 
-labels = [
+labels=[
     "Schulen",
     "Straßen",
     "Kultur",
@@ -283,7 +319,7 @@ labels = [
     "Soziales"
 ]
 
-values = [
+values=[
     schule,
     verkehr,
     kultur_i,
@@ -291,7 +327,7 @@ values = [
     soziales
 ]
 
-fig_struktur = go.Figure(
+fig_struktur=go.Figure(
     data=[go.Pie(labels=labels,values=values)]
 )
 
@@ -303,31 +339,14 @@ st.plotly_chart(fig_struktur,use_container_width=True)
 st.subheader("Auswirkung pro Einwohner")
 
 st.metric(
-    "Kosten / Entlastung pro Einwohner",
-    f"{kosten_pro_buerger:.2f} €"
+"Kosten / Entlastung pro Einwohner",
+f"{kosten_pro_buerger:.2f} €"
 )
 
 
-# Projektstatus
+# Projektstatus anzeigen
 
-st.subheader("Mögliche Projekte")
-
-if pool > 20:
-
-    st.write("✔ Neubau Hallenbad möglich")
-    st.write("✔ Ausbau Radwegenetz")
-    st.write("✔ Schulsanierungen")
-
-elif pool > -20:
-
-    st.write("⚠ Projekte müssen priorisiert werden")
-    st.write("✔ Schulsanierung wahrscheinlich")
-    st.write("⚠ Radwege teilweise")
-
-else:
-
-    st.write("❌ Große Projekte derzeit nicht finanzierbar")
-    st.write("⚠ Nur notwendige Investitionen")
+projekt_status(pool)
 
 
 # Bürgererklärung
@@ -338,31 +357,34 @@ with st.expander("Erklärung der Simulation für Bürgerinnen und Bürger"):
 Diese Simulation zeigt vereinfacht, wie sich politische Entscheidungen
 auf den Haushalt der Doppelstadt Villingen-Schwenningen auswirken können.
 
-Die Stadt besteht aus zwei großen Stadtteilen: Villingen und Schwenningen.
-Beide teilen sich einen gemeinsamen Haushalt, gleichzeitig müssen
-Investitionen und Projekte zwischen den Stadtteilen verteilt werden.
+Die Stadt besteht aus zwei großen Stadtteilen:
+Villingen und Schwenningen.
+
+Beide Stadtteile teilen sich einen gemeinsamen Haushalt,
+gleichzeitig müssen Investitionen und Projekte zwischen
+den Stadtteilen verteilt werden.
 
 Der Haushalt bestimmt, wie viel Geld für Infrastruktur,
 Schulen, Straßen, Kultur, Sport oder soziale Einrichtungen
 zur Verfügung steht.
 
-Die beiden Anzeigen oben zeigen, wie sich politische Entscheidungen
-auf die Entwicklung der beiden Stadtteile auswirken können.
+Die beiden Anzeigen oben zeigen, wie sich Entscheidungen
+auf die finanzielle Entwicklung der beiden Stadtteile
+auswirken können.
 
-Ein höherer Wert bedeutet mehr Handlungsspielraum für Investitionen
-und eine stabilere finanzielle Situation.
+Ein höherer Wert bedeutet mehr Handlungsspielraum
+für Investitionen und Projekte.
 
-In der Simulation können verschiedene Entscheidungen ausprobiert werden:
+Mit den Reglern können verschiedene Szenarien
+durchgespielt werden:
 
 • Höhe der Investitionen  
 • Verteilung zwischen Villingen und Schwenningen  
 • Prioritäten bei Schulen, Verkehr oder Kultur  
 • mögliche neue Einnahmen  
 
-Die Ergebnisse zeigen, wie sich diese Entscheidungen auf den
-finanziellen Handlungsspielraum der Stadt auswirken können.
-
-Die dargestellten Werte sind keine offiziellen Haushaltszahlen.
-Die Simulation dient ausschließlich dazu, Zusammenhänge verständlich
-darzustellen und verschiedene Szenarien auszuprobieren.
+Die Simulation ist ein vereinfachtes Modell
+und stellt keine offiziellen Haushaltszahlen dar.
+Sie dient ausschließlich dazu, Zusammenhänge
+verständlich darzustellen.
 """)
