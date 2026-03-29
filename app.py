@@ -8,14 +8,14 @@ st.title("Haushalts-Simulation – Villingen-Schwenningen")
 
 st.markdown("""
 Diese Simulation zeigt vereinfacht, wie politische Entscheidungen
-den finanziellen Handlungsspielraum der Stadt beeinflussen können.
+den finanziellen Handlungsspielraum der Stadt beeinflussen könnten.
 """)
 
 # Grundwerte
 EINWOHNER = 90000
 MOTOR_BASIS = 100
 
-# Haushaltsentwicklung
+# Beispielhafte Haushaltsentwicklung
 haushalt = pd.DataFrame({
     "Jahr":[2020,2021,2022,2023,2024],
     "Haushalt":[105,110,98,102,95]
@@ -42,14 +42,13 @@ if szenario == "Sparhaushalt":
     kultur_default = -5
     vereine_default = -5
 
-if szenario == "Investitionshaushalt":
+elif szenario == "Investitionshaushalt":
     personal_default = 10
     invest_default = 30
     kultur_default = 10
     vereine_default = 5
 
 
-# Slider
 st.sidebar.subheader("Politische Entscheidungen")
 
 personal = st.sidebar.slider(
@@ -83,7 +82,8 @@ verpackungssteuer = st.sidebar.checkbox("Verpackungssteuer")
 st.sidebar.subheader("Sondersituation")
 
 krise = st.sidebar.toggle(
-    "Krisenmodus aktivieren"
+    "Krisenmodus aktivieren",
+    help="Simuliert außergewöhnliche Belastungen für den Haushalt"
 )
 
 # Einnahmen berechnen
@@ -101,7 +101,7 @@ if verpackungssteuer:
 # Krisenkosten
 krisenkosten = 40 if krise else 0
 
-# Kosten
+# Gesamtkosten
 kosten = personal*2 + investitionen + kultur + vereine + krisenkosten
 
 # Haushaltspool
@@ -129,8 +129,7 @@ v_pct = (v_rev_net/(v_rev_net+s_rev_net))*100 if (v_rev_net+s_rev_net)>0 else 0
 s_pct = (s_rev_net/(v_rev_net+s_rev_net))*100 if (v_rev_net+s_rev_net)>0 else 0
 
 
-# Investitionsverteilung (DYNAMISCH)
-
+# Investitionsprioritäten (dynamisch)
 st.sidebar.subheader("Investitionsprioritäten")
 
 schulen = st.sidebar.slider("Schulen",0,50,30)
@@ -182,10 +181,10 @@ def haushalts_ampel(motor):
         st.success("🟢 Haushalt stabil – Investitionen möglich")
 
     elif motor >= 90:
-        st.warning("🟡 Haushalt angespannt")
+        st.warning("🟡 Haushalt angespannt – Entscheidungen müssen abgewogen werden")
 
     else:
-        st.error("🔴 Haushalt unter Druck")
+        st.error("🔴 Haushalt unter Druck – Einsparungen oder neue Einnahmen nötig")
 
 
 # Haushaltsentwicklung
@@ -197,7 +196,8 @@ fig_hist.add_trace(
     go.Scatter(
         x=haushalt["Jahr"],
         y=haushalt["Haushalt"],
-        mode="lines+markers"
+        mode="lines+markers",
+        name="Haushaltslage"
     )
 )
 
@@ -253,16 +253,152 @@ f"{kosten_pro_buerger:.2f} €"
 )
 
 
-# Erklärung
-with st.expander("Erklärung für Bürger"):
+# Erklärung für Bürger
+with st.expander("Wie funktioniert diese Simulation? – Erklärung für Bürger"):
 
-    st.write("""
-Der Motor symbolisiert die Handlungsfähigkeit der Stadtverwaltung.
+    st.markdown("""
+### Worum geht es in dieser Simulation?
 
-Politische Entscheidungen beeinflussen Einnahmen und Ausgaben.
+Diese Anwendung zeigt vereinfacht, wie finanzielle Entscheidungen
+den Handlungsspielraum einer Stadt beeinflussen können.
 
-Wenn der Motor stark ist, kann die Stadt mehr investieren.
-Wenn er schwach ist, müssen Ausgaben reduziert oder Einnahmen erhöht werden.
+Ein städtischer Haushalt besteht aus **Einnahmen** und **Ausgaben**.
+
+Einnahmen entstehen zum Beispiel durch:
+
+- Steuern
+- Gebühren
+- Zuweisungen von Land oder Bund
+
+Ausgaben entstehen unter anderem für:
+
+- Personal der Stadtverwaltung
+- Schulen und Infrastruktur
+- Kulturangebote
+- soziale Leistungen
+- Förderung von Vereinen
+
+Da die finanziellen Mittel begrenzt sind, müssen Städte Prioritäten setzen.
+
+---
+
+### Der „Motor“ der Stadtverwaltung
+
+Der Motor ist ein Symbol für die **finanzielle Leistungsfähigkeit der Stadt**.
+
+Ein starker Motor bedeutet:
+
+- mehr Investitionen möglich
+- Projekte können umgesetzt werden
+- mehr Handlungsspielraum
+
+Ein schwächerer Motor bedeutet:
+
+- Projekte müssen verschoben werden
+- Ausgaben müssen reduziert werden
+- neue Einnahmen müssen geprüft werden
+
+---
+
+### Was können Sie in der Simulation verändern?
+
+In der linken Seitenleiste können Sie verschiedene Entscheidungen ausprobieren.
+
+Zum Beispiel:
+
+**Personalstellen**
+
+Mehr Personal kann die Leistungsfähigkeit der Verwaltung verbessern,
+verursacht aber zusätzliche Kosten.
+
+**Investitionen**
+
+Investitionen betreffen zum Beispiel:
+
+- Schulen
+- Straßen
+- Sportanlagen
+- soziale Einrichtungen
+
+Mehr Investitionen können langfristig sinnvoll sein,
+belasten aber kurzfristig den Haushalt.
+
+**Kultur und Veranstaltungen**
+
+Kulturelle Angebote erhöhen die Lebensqualität einer Stadt,
+werden aber meist aus freiwilligen Leistungen finanziert.
+
+**Vereinsförderung**
+
+Sport- und Kulturvereine sind ein wichtiger Bestandteil des städtischen Lebens.
+Viele Städte unterstützen Vereine finanziell.
+
+---
+
+### Neue Einnahmen
+
+Sie können auch prüfen, wie sich zusätzliche Einnahmequellen auswirken könnten.
+
+Beispiele:
+
+- Grundsteuer C
+- Zweitwohnsitzsteuer
+- Verpackungssteuer
+
+Solche Einnahmen können helfen, den Haushalt zu stabilisieren.
+
+---
+
+### Krisenmodus
+
+Der Krisenmodus simuliert außergewöhnliche Belastungen,
+zum Beispiel:
+
+- wirtschaftliche Krisen
+- stark steigende Kosten
+- unerwartete Ausgaben
+
+In solchen Situationen wird der Handlungsspielraum der Stadt kleiner.
+
+---
+
+### Investitionsprioritäten
+
+Sie können außerdem festlegen,
+welche Bereiche stärker gefördert werden sollen.
+
+Zum Beispiel:
+
+- mehr Investitionen in Schulen
+- mehr Mittel für Straßen
+- stärkere Förderung von Sportanlagen
+
+Da das Budget begrenzt ist,
+führt eine höhere Priorität für einen Bereich
+meist zu weniger Mitteln für andere Bereiche.
+
+---
+
+### Kosten oder Entlastung pro Einwohner
+
+Die Simulation zeigt auch eine rechnerische Größe:
+
+**Kosten oder Entlastung pro Einwohner.**
+
+Diese Zahl soll verdeutlichen,
+wie sich politische Entscheidungen theoretisch auf die Bevölkerung auswirken könnten.
+
+---
+
+### Wichtiger Hinweis
+
+Diese Simulation stellt **keine offiziellen Haushaltszahlen**
+der Stadt dar.
+
+Sie ist ein vereinfachtes Modell,
+das lediglich verdeutlichen soll,
+wie komplex kommunale Haushaltsentscheidungen sind.
 """)
 
-st.caption("Simulation – vereinfachtes Modell")
+
+st.caption("Diese Simulation ist ein vereinfachtes Modell und dient nur zur Illustration möglicher Szenarien.")
