@@ -1,390 +1,349 @@
 import streamlit as st
-import plotly.graph_objects as go
 import pandas as pd
+import plotly.graph_objects as go
 
-st.set_page_config(page_title="Haushalts-Simulation VS", layout="wide")
+# -------------------------------------------------
+# SEITENEINSTELLUNG
+# -------------------------------------------------
 
-st.title("Haushalts-Simulation – Doppelstadt Villingen-Schwenningen")
+st.set_page_config(
+    page_title="Bürgerhaushalt Villingen-Schwenningen",
+    layout="wide"
+)
+
+# -------------------------------------------------
+# TITEL
+# -------------------------------------------------
+
+st.title("Bürgerhaushalt Simulation")
+st.subheader("Doppelhaushalt der Stadt Villingen-Schwenningen")
 
 st.markdown("""
-Diese Simulation zeigt vereinfacht, wie sich politische Entscheidungen
-auf den Haushalt der Doppelstadt Villingen-Schwenningen auswirken können.
+Diese interaktive Simulation zeigt vereinfacht, wie politische Entscheidungen den Haushalt der Stadt beeinflussen können.
 
-Die Stadt besteht aus zwei großen Stadtteilen:
+Die Stadt besteht aus zwei Stadtteilen:
 
 **V = Villingen**  
 **S = Schwenningen**
+
+Beide Stadtteile besitzen eigene Einnahmen und Ausgaben, gehören jedoch zu einem gemeinsamen städtischen Haushalt.
 """)
 
-# Grundwerte
+# -------------------------------------------------
+# SIDEBAR - EINSTELLUNGEN
+# -------------------------------------------------
 
-EINWOHNER = 90000
-EINWOHNER_V = 43000
-EINWOHNER_S = 47000
+st.sidebar.header("Haushaltseinstellungen")
 
-M_FIX = 100
-
-
-# Haushaltsentwicklung (Beispieldaten)
-
-haushalt = pd.DataFrame({
-    "Jahr":[2020,2021,2022,2023,2024],
-    "Haushalt":[105,110,98,102,95]
-})
-
-
-# Sidebar
-
-st.sidebar.header("Simulation einstellen")
-
-szenario = st.sidebar.radio(
-    "Haushaltsstrategie",
-    [
-        "Status quo",
-        "Sparhaushalt",
-        "Investitionshaushalt"
-    ]
+steuer_v = st.sidebar.slider(
+    "Steuereinnahmen Villingen (Mio €)",
+    0, 300, 150
 )
 
-personal = st.sidebar.slider("Personalstellen Veränderung",-20,40,0)
-
-gesamtinvest = st.sidebar.slider(
-    "Gesamtinvestitionen Infrastruktur",
-    -50,80,0
+steuer_s = st.sidebar.slider(
+    "Steuereinnahmen Schwenningen (Mio €)",
+    0, 300, 140
 )
 
-kultur = st.sidebar.slider("Kultur & Veranstaltungen",-20,20,0)
+ausgaben_v = st.sidebar.slider(
+    "Laufende Ausgaben Villingen (Mio €)",
+    0, 300, 120
+)
 
-vereine = st.sidebar.slider("Vereinsförderung",-20,20,0)
+ausgaben_s = st.sidebar.slider(
+    "Laufende Ausgaben Schwenningen (Mio €)",
+    0, 300, 110
+)
 
+invest_total = st.sidebar.slider(
+    "Gesamtinvestitionen Stadt (Mio €)",
+    0, 200, 60
+)
 
-# Investitionsverteilung
+# -------------------------------------------------
+# INVESTITIONSVERTEILUNG
+# -------------------------------------------------
 
-st.sidebar.subheader("Investitionsverteilung zwischen den Stadtteilen")
+st.sidebar.subheader("Investitionsverteilung")
 
 anteil_v = st.sidebar.slider(
-    "Investitionen Villingen %",
-    0,100,50
+    "Investitionsanteil Villingen (%)",
+    0,
+    100,
+    50
 )
 
 anteil_s = 100 - anteil_v
 
-st.sidebar.write(f"Schwenningen Anteil: {anteil_s}%")
+invest_v = invest_total * anteil_v / 100
+invest_s = invest_total * anteil_s / 100
 
+# -------------------------------------------------
+# SALDENBERECHNUNG
+# -------------------------------------------------
 
-# Investitionsstruktur
+saldo_v = steuer_v - ausgaben_v - invest_v
+saldo_s = steuer_s - ausgaben_s - invest_s
 
-st.sidebar.subheader("Investitionsstruktur")
+saldo_gesamt = saldo_v + saldo_s
 
-schule = st.sidebar.slider("Schulen",0,100,30)
-verkehr = st.sidebar.slider("Straßen / Verkehr",0,100,25)
-kultur_i = st.sidebar.slider("Kultur",0,100,15)
-sport = st.sidebar.slider("Sport",0,100,15)
-soziales = st.sidebar.slider("Soziales",0,100,15)
+# -------------------------------------------------
+# TACHO FUNKTION
+# -------------------------------------------------
 
-
-# Einnahmen
-
-st.sidebar.subheader("Neue Einnahmen")
-
-grundsteuer_c = st.sidebar.checkbox("Grundsteuer C")
-zweitwohnsitzsteuer = st.sidebar.checkbox("Zweitwohnsitzsteuer")
-verpackungssteuer = st.sidebar.checkbox("Verpackungssteuer")
-
-
-# Krisenmodus
-
-st.sidebar.subheader("Sondersituation")
-
-krise = st.sidebar.toggle("Krisenmodus aktivieren")
-
-
-# Szenario Logik
-
-if szenario == "Sparhaushalt":
-
-    personal = -5
-    gesamtinvest = -20
-    kultur = -5
-    vereine = -5
-
-elif szenario == "Investitionshaushalt":
-
-    personal = 10
-    gesamtinvest = 40
-    kultur = 10
-    vereine = 5
-
-
-# Einnahmen
-
-steuer_einnahmen = 0
-
-if grundsteuer_c:
-    steuer_einnahmen += 20
-
-if zweitwohnsitzsteuer:
-    steuer_einnahmen += 10
-
-if verpackungssteuer:
-    steuer_einnahmen += 15
-
-
-# Krisenkosten
-
-krisenkosten = 40 if krise else 0
-
-
-# Kosten
-
-kosten = personal*2 + kultur + vereine + krisenkosten
-
-
-# Haushaltsspielraum
-
-pool = steuer_einnahmen - kosten
-
-
-# Investitionen nach Stadtteil
-
-invest_v = gesamtinvest * (anteil_v/100)
-invest_s = gesamtinvest * (anteil_s/100)
-
-
-# Bevölkerungsgewichtung
-
-gewicht_v = EINWOHNER_V / EINWOHNER
-gewicht_s = EINWOHNER_S / EINWOHNER
-
-
-# Motorwerte (Entwicklungsindex)
-
-motor_v = M_FIX + pool + invest_v * gewicht_v
-motor_s = M_FIX + pool + invest_s * gewicht_s
-
-
-# Kriseneffekt
-
-if krise:
-
-    motor_v -= 10
-    motor_s -= 10
-
-
-# Kosten pro Bürger
-
-kosten_pro_buerger = pool * 1000000 / EINWOHNER if pool != 0 else 0
-
-
-# Gauge Anzeige
-
-def gauge(value,title):
+def gauge(title, value):
 
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
-        title={'text':title},
+        title={"text": title},
         gauge={
-            'axis':{'range':[0,150]},
-            'bar':{'color':"black"},
-            'steps':[
-                {'range':[0,60],'color':"red"},
-                {'range':[60,100],'color':"orange"},
-                {'range':[100,150],'color':"lightgreen"}
-            ]
+            "axis": {"range": [-150, 150]},
+            "bar": {"color": "black"},
+            "steps": [
+                {"range": [-150, 0], "color": "#ffcccc"},
+                {"range": [0, 75], "color": "#ccffcc"},
+                {"range": [75, 150], "color": "#99ff99"},
+            ],
         }
     ))
 
     return fig
 
+# -------------------------------------------------
+# HAUSHALTSTACHOS
+# -------------------------------------------------
 
-# Haushaltsampel
-
-def haushalts_ampel(pool):
-
-    if pool > 20:
-
-        st.success("🟢 Haushalt stabil – Investitionen möglich")
-
-    elif pool > -20:
-
-        st.warning("🟡 Haushalt angespannt – Prioritäten nötig")
-
-    else:
-
-        st.error("🔴 Haushalt unter Druck – Einsparungen oder neue Einnahmen nötig")
-
-
-# Projektstatus
-
-def projekt_status(pool):
-
-    st.subheader("Mögliche Projekte")
-
-    if pool > 20:
-
-        st.write("✔ Neubau Hallenbad möglich")
-        st.write("✔ Ausbau Radwegenetz")
-        st.write("✔ Schulsanierungen")
-
-    elif pool > -20:
-
-        st.write("⚠ Projekte müssen priorisiert werden")
-        st.write("✔ Schulsanierung wahrscheinlich")
-        st.write("⚠ Radwege teilweise")
-
-    else:
-
-        st.write("❌ Große Projekte derzeit nicht finanzierbar")
-        st.write("⚠ Nur notwendige Investitionen")
-
-
-# Haushaltsentwicklung Grafik
-
-st.subheader("Haushaltsentwicklung der Stadt")
-
-fig_hist = go.Figure()
-
-fig_hist.add_trace(
-    go.Scatter(
-        x=haushalt["Jahr"],
-        y=haushalt["Haushalt"],
-        mode="lines+markers",
-        name="Historische Entwicklung"
-    )
-)
-
-fig_hist.add_trace(
-    go.Scatter(
-        x=[2025],
-        y=[(motor_v+motor_s)/2],
-        mode="markers",
-        marker=dict(size=12),
-        name="Simulation"
-    )
-)
-
-st.plotly_chart(fig_hist,use_container_width=True)
-
-
-# Stadtteilentwicklung
-
-st.subheader("Finanzielle Entwicklung der Stadtteile")
-
-col1,col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
 with col1:
-
+    st.subheader("Stadtteil Villingen (V)")
     st.plotly_chart(
-        gauge(motor_v,"Villingen"),
+        gauge("Haushaltssaldo Villingen (Mio €)", saldo_v),
         use_container_width=True
     )
 
 with col2:
-
+    st.subheader("Stadtteil Schwenningen (S)")
     st.plotly_chart(
-        gauge(motor_s,"Schwenningen"),
+        gauge("Haushaltssaldo Schwenningen (Mio €)", saldo_s),
         use_container_width=True
     )
 
+# -------------------------------------------------
+# GESAMTHAUSHALT
+# -------------------------------------------------
 
-# Haushaltsampel anzeigen
-
-haushalts_ampel(pool)
-
-
-# Investitionsverteilung
-
-st.subheader("Investitionsverteilung zwischen den Stadtteilen")
-
-labels=["Villingen","Schwenningen"]
-values=[anteil_v,anteil_s]
-
-fig_pie=go.Figure(
-    data=[go.Pie(labels=labels,values=values)]
-)
-
-st.plotly_chart(fig_pie,use_container_width=True)
-
-
-# Investitionsstruktur
-
-st.subheader("Investitionsstruktur")
-
-labels=[
-    "Schulen",
-    "Straßen",
-    "Kultur",
-    "Sport",
-    "Soziales"
-]
-
-values=[
-    schule,
-    verkehr,
-    kultur_i,
-    sport,
-    soziales
-]
-
-fig_struktur=go.Figure(
-    data=[go.Pie(labels=labels,values=values)]
-)
-
-st.plotly_chart(fig_struktur,use_container_width=True)
-
-
-# Bürgerkosten
-
-st.subheader("Auswirkung pro Einwohner")
+st.header("Gesamthaushalt der Stadt")
 
 st.metric(
-"Kosten / Entlastung pro Einwohner",
-f"{kosten_pro_buerger:.2f} €"
+    "Gesamtsaldo Villingen + Schwenningen (Mio €)",
+    round(saldo_gesamt, 2)
 )
 
+# -------------------------------------------------
+# INVESTITIONSGRAFIK
+# -------------------------------------------------
 
-# Projektstatus anzeigen
+st.header("Investitionsverteilung")
 
-projekt_status(pool)
+invest_df = pd.DataFrame({
+    "Stadtteil": ["Villingen", "Schwenningen"],
+    "Investitionen": [invest_v, invest_s]
+})
 
+st.bar_chart(invest_df.set_index("Stadtteil"))
 
-# Bürgererklärung
+# -------------------------------------------------
+# HAUSHALTSENTWICKLUNG
+# -------------------------------------------------
 
-with st.expander("Erklärung der Simulation für Bürgerinnen und Bürger"):
+st.header("Haushaltsentwicklung (Simulation)")
 
-    st.write("""
-Diese Simulation zeigt vereinfacht, wie sich politische Entscheidungen
-auf den Haushalt der Doppelstadt Villingen-Schwenningen auswirken können.
+jahre = list(range(2025, 2035))
 
-Die Stadt besteht aus zwei großen Stadtteilen:
-Villingen und Schwenningen.
+entwicklung = []
 
-Beide Stadtteile teilen sich einen gemeinsamen Haushalt,
-gleichzeitig müssen Investitionen und Projekte zwischen
-den Stadtteilen verteilt werden.
+v = saldo_v
+s = saldo_s
 
-Der Haushalt bestimmt, wie viel Geld für Infrastruktur,
-Schulen, Straßen, Kultur, Sport oder soziale Einrichtungen
-zur Verfügung steht.
+for jahr in jahre:
 
-Die beiden Anzeigen oben zeigen, wie sich Entscheidungen
-auf die finanzielle Entwicklung der beiden Stadtteile
-auswirken können.
+    v = v + saldo_v * 0.25
+    s = s + saldo_s * 0.25
 
-Ein höherer Wert bedeutet mehr Handlungsspielraum
-für Investitionen und Projekte.
+    entwicklung.append({
+        "Jahr": jahr,
+        "Villingen": v,
+        "Schwenningen": s
+    })
 
-Mit den Reglern können verschiedene Szenarien
-durchgespielt werden:
+df = pd.DataFrame(entwicklung)
 
-• Höhe der Investitionen  
-• Verteilung zwischen Villingen und Schwenningen  
-• Prioritäten bei Schulen, Verkehr oder Kultur  
-• mögliche neue Einnahmen  
+fig = go.Figure()
 
-Die Simulation ist ein vereinfachtes Modell
-und stellt keine offiziellen Haushaltszahlen dar.
-Sie dient ausschließlich dazu, Zusammenhänge
-verständlich darzustellen.
+fig.add_trace(go.Scatter(
+    x=df["Jahr"],
+    y=df["Villingen"],
+    mode="lines+markers",
+    name="Villingen"
+))
+
+fig.add_trace(go.Scatter(
+    x=df["Jahr"],
+    y=df["Schwenningen"],
+    mode="lines+markers",
+    name="Schwenningen"
+))
+
+st.plotly_chart(fig, use_container_width=True)
+
+# -------------------------------------------------
+# BÜRGERERKLÄRUNG
+# -------------------------------------------------
+
+st.header("Bürgererklärung")
+
+with st.expander("Was zeigt diese Simulation?"):
+
+    st.markdown("""
+### Zweck der Simulation
+
+Diese Simulation soll Bürgerinnen und Bürgern verständlich machen, wie ein kommunaler Haushalt funktioniert.
+
+Dabei wird die Doppelstruktur der Stadt berücksichtigt:
+
+• Stadtteil **Villingen (V)**  
+• Stadtteil **Schwenningen (S)**  
+
+Beide haben eigene Einnahmen und Ausgaben, bilden aber zusammen den Gesamthaushalt der Stadt.
+
+---
+
+### Steuereinnahmen
+
+Die Steuereinnahmen setzen sich vereinfacht aus folgenden Quellen zusammen:
+
+• Gewerbesteuer  
+• Einkommensteueranteil  
+• Grundsteuer  
+• weitere kommunale Einnahmen
+
+Diese Einnahmen stehen der Stadt zur Finanzierung öffentlicher Aufgaben zur Verfügung.
+
+---
+
+### Laufende Ausgaben
+
+Laufende Ausgaben sind Kosten, die jedes Jahr entstehen, zum Beispiel:
+
+• Schulen und Kindergärten  
+• Straßenunterhalt  
+• Feuerwehr und Sicherheit  
+• Verwaltung  
+• Kultur und Sport  
+• soziale Leistungen
+
+Diese Ausgaben sind oft langfristig gebunden und lassen sich nur begrenzt kurzfristig verändern.
+
+---
+
+### Investitionen
+
+Investitionen sind größere Ausgaben für langfristige Projekte, zum Beispiel:
+
+• Bau oder Sanierung von Schulen  
+• neue Straßen oder Brücken  
+• Digitalisierung der Verwaltung  
+• Klimaschutzmaßnahmen  
+• Infrastrukturprojekte
+
+In der Simulation können diese Investitionen zwischen den beiden Stadtteilen aufgeteilt werden.
+
+---
+
+### Bedeutung der Tachos
+
+Die beiden Tachos zeigen den **Haushaltssaldo der jeweiligen Stadtteile**.
+
+Berechnung:
+
+Steuereinnahmen  
+minus laufende Ausgaben  
+minus Investitionen  
+
+Ergebnis = Haushaltsüberschuss oder Haushaltsdefizit.
+
+---
+
+### Farbbereiche
+
+**Grün**
+
+Der Haushalt ist ausgeglichen oder im Überschuss.
+
+Die Stadt kann Rücklagen bilden oder Schulden abbauen.
+
+**Rot**
+
+Der Haushalt hat ein Defizit.
+
+Langfristig müssten dann Schulden aufgenommen oder Ausgaben reduziert werden.
+
+---
+
+### Haushaltsentwicklung
+
+Die Grafik zeigt eine vereinfachte Projektion der zukünftigen Haushaltsentwicklung.
+
+Sie verdeutlicht, dass heutige Entscheidungen langfristige Auswirkungen haben können.
+
+Ein dauerhaftes Defizit kann langfristig zu steigenden Schulden führen.
+
+Ein Überschuss ermöglicht dagegen Investitionen oder Rücklagenbildung.
+
+---
+
+### Wichtig
+
+Diese Simulation ist **eine vereinfachte Darstellung** eines kommunalen Haushalts.
+
+Der reale Haushalt einer Stadt besteht aus vielen hundert Einzelpositionen und gesetzlichen Vorgaben.
+
+Die Simulation dient ausschließlich dazu, die grundlegenden Zusammenhänge verständlich zu machen.
+""")
+
+with st.expander("Wie funktioniert der Doppelhaushalt der Stadt?"):
+
+    st.markdown("""
+Viele Städte planen ihren Haushalt für **zwei Jahre gleichzeitig**.  
+Das nennt man einen **Doppelhaushalt**.
+
+Dabei werden Einnahmen und Ausgaben für zwei Jahre im Voraus geplant.
+
+Ziele eines Doppelhaushalts:
+
+• mehr Planungssicherheit  
+• langfristige Investitionsplanung  
+• effizientere Verwaltung
+
+In dieser Simulation wird vereinfacht dargestellt, wie sich Entscheidungen über mehrere Jahre auswirken können.
+
+---
+
+### Warum werden Villingen und Schwenningen getrennt dargestellt?
+
+Villingen-Schwenningen besteht historisch aus zwei Städten, die heute gemeinsam verwaltet werden.
+
+Viele Bürger identifizieren sich weiterhin stark mit ihrem jeweiligen Stadtteil.
+
+Die Simulation zeigt daher getrennt:
+
+• Einnahmen  
+• Ausgaben  
+• Investitionen  
+
+für beide Stadtteile.
+
+So wird sichtbar, wie sich politische Entscheidungen auf die beiden Teile der Stadt auswirken können.
 """)
